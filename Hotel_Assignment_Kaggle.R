@@ -1,5 +1,7 @@
 library(dplyr)
 library(data.table)
+library(RMySQL)
+library(DBI)
 
 #read in hotel reviews
 reviewData <- read.csv("Hotel_Reviews.csv")
@@ -20,8 +22,12 @@ reviewNeg$label = "Negative"
 #merging the reviews
 labeledData <- rbind(reviewPos, reviewNeg, reviewHW)
 
+#removing No Positive/Negative
+labeledData <- labeledData[labeledData$review != "No Positive", ]
+labeledData <- labeledData[labeledData$review != "No Negative", ]
 
-##removing No Positive/Negative
-#labeledData <- labeledData[review != "no positive", ]
-#labeledData <- labeledData[review != "no negative", ]
-#labeledData <- labeledData[review != "nothing", ]
+#database connection
+reviewDb <- dbConnect(MySQL(), dbname = "hotelreviews", user = "root", password = "newrootpassword", host = "localhost")
+dbListTables(reviewDb)
+dbWriteTable(reviewDb, value = labeledData, name = "labeledData", row.names = FALSE, overwrite = TRUE)
+dbDisconnect(reviewDb)
