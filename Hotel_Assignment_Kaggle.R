@@ -34,10 +34,11 @@ dbWriteTable(reviewDb, value = labeledData, name = "labeledData", row.names = FA
 dbDisconnect(reviewDb)
 
 #webscraping
-url <- "https://www.hotelspecials.nl/apollo-hotel-almere-city-centre?utm_source=tripadvisor&utm_medium=meta&utm_campaign=1738&pc=CAQsFzQBBC0XNAEBAQEBAQIAAAA&refid=XaInbwoQL4oAAe8HE-IAAAAU&sc=EAAAAAAAAAAAAAAAAAAAAAA"
+url <- "https://www.tripadvisor.co.uk/Hotel_Review-g312659-d1605020-Reviews-Pepperclub_Hotel-Cape_Town_Central_Western_Cape.html"
 webpage <- read_html(url)
 
-score_data_html <- html_nodes(webpage, ".rating-value span")
+score_data_html <- html_nodes(webpage, ".common-text-ReadMore__content--2X4LR")
 score_data <- html_text(score_data_html)
-score_data <- as.numeric(score_data)
+#score_data <- as.numeric(score_data)
 head(score_data)
+score_data <- as.data.frame(score_data)
