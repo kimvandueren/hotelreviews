@@ -1,3 +1,7 @@
+#notes from consulting:
+# - cleaning only as much as is necessary for each classifier, don't want overfitting
+# - Only use half of the original dataset (but make sure to shuffle it before you do) so it isnt as big
+
 library(dplyr)
 library(data.table)
 library(RMySQL)
@@ -29,7 +33,7 @@ reviewNeg$label = "Negative"
 #merging the reviews
 labeledData <- rbind(reviewPos, reviewNeg, reviewHW)
 
-#removing No Positive/Negative
+#cleaning data
 labeledData$review <- as.character(labeledData$review)
 labeledData$review <- gsub(",", "", labeledData$review)
 labeledData$review <- gsub("\\.", "", labeledData$review)
@@ -40,18 +44,22 @@ tail(labeledData)
 #database connection
 reviewDb <- dbConnect(MySQL(), dbname = "hotelreviews", user = "root", password = "newrootpassword", host = "localhost")
 dbListTables(reviewDb)
-dbWriteTable(reviewDb, value = labeledData, name = "labeledData", row.names = FALSE, overwrite = TRUE)
+dbWriteTable(reviewDb, value = labeledData, name = "labeleddata", row.names = FALSE, overwrite = TRUE)
 dbDisconnect(reviewDb)
 
 #webscraping
-url <- "https://www.tripadvisor.co.uk/Hotel_Review-g312659-d1605020-Reviews-Pepperclub_Hotel-Cape_Town_Central_Western_Cape.html"
+url <- "https://uk.hotels.com/ho377829-tr/?q-check-in=2019-10-17&q-check-out=2019-10-18&q-rooms=1&q-room-0-adults=2&SYE=3&ZSX=0&MGT=1&YGF=2&WOD=4&WOE=5&JHR=1&FPQ=2&applyEmbargo=false&reviewTab=brand-reviews"
 webpage <- read_html(url)
 
-text_data_html <- html_nodes(webpage, ".common-text-ReadMore__content--2X4LR")
-text_data <- html_text(score_data_html)
-#score_data <- as.numeric(score_data)
+text_data_html <- html_nodes(webpage, ".description")
+text_data <- html_text(text_data_html)
 head(text_data)
 text_data <- as.data.frame(text_data)
+
+score_data_html <- html_nodes(webpage, ".rating-score")
+score_data <- html_text(score_data_html)
+score_data <- as.numeric(score_data)
+head(score_data)
 
 #support vector machine
 #https://www.geeksforgeeks.org/classifying-data-using-support-vector-machinessvms-in-r/
@@ -61,11 +69,11 @@ split = sample.split(labeledData$label, SplitRatio = 0.75)
 training_set = subset(labeledData, split == TRUE) 
 test_set = subset(labeledData, split == FALSE)
 
-classifier = svm(formula = label ~ ., 
+classifier = svm(formula = training_set$label ~ ., 
                  data = training_set, 
                  type = 'C-classification', 
                  kernel = 'linear')
-y_pred = predict(classifier, newdata = test_set)
+y_pred = predict(classifier, newdata = test_set$review)
 
 #naïve bayes
 #https://rpubs.com/cen0te/naivebayes-sentimentpolarity
@@ -85,13 +93,16 @@ corpus.clean <- corpus %>%
   tm_map(removeWords, stopwords(kind="en")) %>%
   tm_map(stripWhitespace)
 
-dtm <- as.data.frame(DocumentTermMatrix(corpus.clean))
+dtm <- DocumentTermMatrix(corpus.clean)
+dtm <- removeSparseTerms(dtm, .95)
+dtm_matrix <- as.matrix(dtm)
+
 inspect(dtm[40:50, 10:15])
 
 nb_trainingData <- subset(nbLabeledData, split == TRUE)
 nb_testData <- subset(nbLabeledData, split == FALSE)
-nb_trainingDtm <- subset(dtm$dimnames, split == TRUE)
-nb_testDtm <- subset(dtm, split == FALSE)
+nb_trainingDtm <- subset(dtm_matrix, split == TRUE)
+nb_testDtm <- subset(dtm_matrix, split == FALSE)
 nb_trainingCorpus <- subset(corpus.clean, split == TRUE)
 nb_testCorpus <- subset(corpus.clean, split == TRUE)
 #feature selection
