@@ -58,8 +58,34 @@ text_data <- as.data.frame(text_data)
 
 score_data_html <- html_nodes(webpage, ".rating-score")
 score_data <- html_text(score_data_html)
-score_data <- as.numeric(score_data)
+score_data <- as.data.frame(score_data)
 head(score_data)
+
+url2 <- "https://uk.hotels.com/ho248446-tr/?q-check-in=2019-10-17&q-check-out=2019-10-18&q-rooms=1&q-room-0-adults=2&SYE=3&ZSX=0&MGT=1&YGF=1&WOD=4&WOE=5&JHR=1&FPQ=2&applyEmbargo=false&reviewTab=brand-reviews"
+webpage2 <- read_html(url2)
+
+text_data_html2 <- html_nodes(webpage2, ".description")
+text_data2 <- html_text(text_data_html2)
+head(text_data2)
+text_data2 <- as.data.frame(text_data2)
+
+score_data_html2 <- html_nodes(webpage2, ".rating-score")
+score_data2 <- html_text(score_data_html2)
+score_data2 <- as.data.frame(score_data2)
+head(score_data2)
+
+#labelling webscraped data
+score_data <- score_data[-c(1),]
+text_data$score <- score_data
+ws_data1 <- text_data
+
+score_data2 <- score_data2[-c(1),]
+text_data2$score <- score_data2
+ws_data2 <- text_data2
+ws_data2 <- ws_data2[-c(42:50),]
+names(ws_data2)[1] <- "text_data"
+
+ws_data3 <- rbind(ws_data1, ws_data2)
 
 #support vector machine
 #https://www.geeksforgeeks.org/classifying-data-using-support-vector-machinessvms-in-r/
