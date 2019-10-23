@@ -9,6 +9,7 @@ library(tm)
 library(caret)
 library(utf8)
 library(SnowballC)
+library(randomForest)
 
 #read in hotel reviews
 k_data1 <- read.csv("Hotel_Reviews.csv")
@@ -27,11 +28,13 @@ k_data2 <- rbind(review_pos, review_neg)
 k_data2 <- k_data2[sample(nrow(k_data2)), ]
 
 #cleaning and removing data
-k_data3 <- subset(k_data2, review != "No Positive")
-k_data3 <- subset(k_data3, review != "No Negative")
+k_data3 <- subset(k_data2, review != "No Positive") %>%
+  subset(review != "No Negative") %>%
+  subset(review != "Nothing") %>%
+  subset(review != "Na")
 
-remove_percentage = sample.split(k_data3, SplitRatio = 0.5)
-k_data4 <- subset(k_data3, remove_percentage == TRUE)
+split = sample.split(k_data3$review, SplitRatio = 0.05)
+k_data4 <- subset(k_data3, split == TRUE)
 
 #read in handwritten data
 hw_data1 <- read.csv("hand-written-data.csv")
@@ -84,32 +87,14 @@ ws_data3 <- ws_data3 %>%
                            ws_data3$score < 5 ~ "Negative",))
 
 ws_data3$score <- NULL
+ws_data3$review <- gsub("[^[:alnum:][:space:]]","", ws_data3$review)
 
 #combining all three data sets
 data1 <- rbind(k_data4, hw_data1, ws_data3)
 data1 <- data1[sample(nrow(data1)), ]
-
-corpus <- Corpus(VectorSource(data1$review))
-inspect(corpus[1])
-
-corpus_clean <- corpus %>%
-  tm_map(content_transformer(tolower)) %>% 
-  tm_map(removePunctuation) %>%
-  tm_map(removeNumbers) %>%
-  tm_map(removeWords, stopwords(kind="en")) %>%
-  tm_map(stripWhitespace)
-
-as.character(corpus[[1]])
-as.character(corpus_clean[[1]])
-
-data2 <- data.frame(text = sapply(corpus_clean, as.character), stringsAsFactors = FALSE)
-data2$label <- data1$label
-data3 <- subset(data2, text != "nothing")
-data3 <- subset(data3, text != "na")
-data3$text <- gsub("[^a-z ]", "", data3$text)
  
 #database connection
 review_db <- dbConnect(MySQL(), dbname = "hotelreviews", user = "root", password = "newrootpassword", host = "localhost")
 dbListTables(review_db)
-dbWriteTable(review_db, value = data3, name = "labeleddata", row.names = FALSE, overwrite = TRUE)
+dbWriteTable(review_db, value = data1, name = "labeleddata", row.names = FALSE, overwrite = TRUE)
 dbDisconnect(review_db)

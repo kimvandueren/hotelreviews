@@ -1,35 +1,46 @@
-#naïve bayes
+#db connection
 review_db <- dbConnect(MySQL(), dbname = "hotelreviews", user = "root", password = "newrootpassword", host = "localhost")
 dbListTables(review_db)
-nb_data1 <- dbGetQuery(review_db, "CALL GetAllReviews();")
+data1 <- dbGetQuery(review_db, "CALL GetAllReviews();")
 dbDisconnect(review_db)
 
-#https://rpubs.com/cen0te/naivebayes-sentimentpolarity
-set.seed(1)
-nb_data2 <- nb_data1[sample(nrow(nb_data1)), ]
+data1$review <- as.factor(data1$review)
+data1$label <- as.factor(data1$label)
 
-nb_data2$label <- as.factor(nb_data2$label)
+set.seed(123)
 
-corpus <- Corpus(VectorSource(nb_data2$review))
-inspect(corpus[1:3])
+#creating a corpus
+corpus <- Corpus(VectorSource(data1$review))
+inspect(corpus[1])
 
-corpus.clean <- corpus %>%
-  tm_map(content_transformer(tolower)) %>% 
+corpus_clean <- corpus %>%
+  tm_map(content_transformer(tolower)) %>%
   tm_map(removePunctuation) %>%
   tm_map(removeNumbers) %>%
   tm_map(removeWords, stopwords(kind="en")) %>%
-  tm_map(stripWhitespace)
+  tm_map(stemDocument)
 
-dtm <- DocumentTermMatrix(corpus.clean)
-dtm <- removeSparseTerms(dtm, .95)
-dtm_matrix <- as.matrix(dtm)
+dtm <- DocumentTermMatrix(corpus_clean)
+dtm <- removeSparseTerms(dtm, 0.99)
 
-inspect(dtm[40:50, 10:15])
+data2 <- as.data.frame(as.matrix(dtm))
+colnames(data2) <- make.names(colnames(data2))
+data2$label <- data1$label
 
-nb_trainingData <- subset(nb_data2, split == TRUE)
-nb_testData <- subset(nb_data2, split == FALSE)
-nb_trainingDtm <- subset(dtm_matrix, split == TRUE)
-nb_testDtm <- subset(dtm_matrix, split == FALSE)
-nb_trainingCorpus <- subset(corpus.clean, split == TRUE)
-nb_testCorpus <- subset(corpus.clean, split == TRUE)
-#feature selection
+training_data <- subset(data2, split == TRUE)
+test_data <- subset(data2, split == FALSE)
+
+#naive bayes
+nb_classifier <- naiveBayes(training_data$label ~ ., data = training_data)
+nb_predict <- predict(nb_classifier, test_data)
+nb_cm <- confusionMatrix(nb_predict, test_data$label)
+
+#support vector machine
+svm_classifier <- svm(training_data$label ~ ., data = training_data, type = 'C-classification')
+svm_predict <- predict(svm_classifier, test_data)
+svm_cm <- confusionMatrix(svm_predict, test_data$label)
+
+#random forest
+rf_classifier <- randomForest(training_data$label ~ ., data = training_data)
+rf_predict <- predict(rf_classifier, test_data)
+rf_cm <- confusionMatrix(rf_predict, test_data$label)
