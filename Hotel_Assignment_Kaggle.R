@@ -10,6 +10,7 @@ library(caret)
 library(utf8)
 library(SnowballC)
 library(randomForest)
+library(pROC)
 
 #read in hotel reviews
 k_data1 <- read.csv("Hotel_Reviews.csv")
@@ -84,7 +85,7 @@ ws_data3$score <- lapply(ws_data3$score, as.numeric)
 
 ws_data3 <- ws_data3 %>%
   mutate(label = case_when(ws_data3$score > 5 ~ "Positive",
-                           ws_data3$score < 5 ~ "Negative",))
+                           ws_data3$score <= 5 ~ "Negative",))
 
 ws_data3$score <- NULL
 ws_data3$review <- gsub("[^[:alnum:][:space:]]","", ws_data3$review)

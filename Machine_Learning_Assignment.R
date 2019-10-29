@@ -27,6 +27,7 @@ data2 <- as.data.frame(as.matrix(dtm))
 colnames(data2) <- make.names(colnames(data2))
 data2$label <- data1$label
 
+split = sample.split(data2$label, SplitRatio = 0.75)
 training_data <- subset(data2, split == TRUE)
 test_data <- subset(data2, split == FALSE)
 
@@ -44,3 +45,29 @@ svm_cm <- confusionMatrix(svm_predict, test_data$label)
 rf_classifier <- randomForest(training_data$label ~ ., data = training_data)
 rf_predict <- predict(rf_classifier, test_data)
 rf_cm <- confusionMatrix(rf_predict, test_data$label)
+
+#confusion matrixes
+nb_cm
+svm_cm
+rf_cm
+
+
+
+#code for assessment
+test_text <- "I would love to stay at this place again, the room was wonderful and the service fantastic."
+test_corpus <- Corpus(VectorSource(test_text))
+test_dtm <- DocumentTermMatrix(test_corpus)
+test_text2 <- as.data.frame(as.matrix(test_dtm))
+test_text2 <- cbind(test_text, test_text2)
+test_text2 <- cbind(test_text2, data2[15, -146])[1,]
+test_text2$test_text <- NULL
+
+test_nb_predict <- predict(nb_classifier, test_text2)
+test_nb_predict
+
+test_svm_predict <- predict(svm_classifier, test_text2)
+test_svm_predict
+
+test_rf_predict <- predict(rf_classifier, test_text2)
+test_rf_predict
+
