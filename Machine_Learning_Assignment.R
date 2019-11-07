@@ -51,7 +51,48 @@ nb_cm
 svm_cm
 rf_cm
 
+#plot for comparing the different results
+nb_accuracy <- nb_cm$overall['Accuracy']
+nb_precision <- nb_cm$byClass['Neg Pred Value']
+nb_recall <- nb_cm$byClass['Specificity']
 
+svm_accuracy <- svm_cm$overall['Accuracy']
+svm_precision <- svm_cm$byClass['Neg Pred Value']
+svm_recall <- svm_cm$byClass['Specificity']
+
+rf_accuracy <- rf_cm$overall['Accuracy']
+rf_precision <- rf_cm$byClass['Neg Pred Value']
+rf_recall <- rf_cm$byClass['Specificity']
+
+nb_stats <- rbind(nb_accuracy, nb_precision, nb_recall)
+nb_stats <- as.data.frame(nb_stats)
+nb_stats$classifier <- "Naïve Bayes"
+
+svm_stats <- rbind(svm_accuracy, svm_precision, svm_recall)
+svm_stats <- as.data.frame(svm_stats)
+svm_stats$classifier <- "Support Vector Machine"
+
+rf_stats <- rbind(rf_accuracy, rf_precision, rf_recall)
+rf_stats <- as.data.frame(rf_stats)
+rf_stats$classifier <- "Random Forest"
+
+stats_type <- c("Accuracy", "Precision", "Recall")
+
+classifier_stats <- rbind(nb_stats, svm_stats, rf_stats)
+classifier_stats$type <- stats_type
+colnames(classifier_stats)[1] <- "fraction"
+rownames(classifier_stats) <- 1:nrow(classifier_stats)
+classifier_stats <- as.data.frame(classifier_stats)
+
+stats_plot <- ggplot(classifier_stats, aes(classifier, fraction)) +
+  geom_col(aes(fill = classifier, color = classifier), alpha = 0.5) +
+  facet_grid(~type) +
+  labs(title = "Classifier Statistics") +
+  theme(panel.grid = element_blank(),
+        axis.title.x = element_blank(), 
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+stats_plot
 
 #code for assessment
 test_text <- "I would love to stay at this place again, the room was wonderful and the service fantastic."

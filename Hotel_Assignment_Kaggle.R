@@ -11,6 +11,7 @@ library(utf8)
 library(SnowballC)
 library(randomForest)
 library(pROC)
+library(ggplot2)
 
 #read in hotel reviews
 k_data1 <- read.csv("Hotel_Reviews.csv")
